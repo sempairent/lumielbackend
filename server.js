@@ -1,16 +1,19 @@
-const express = require('express');
-const mysql = require('mysql');
-const cors = require('cors');
+import express from 'express';
+import mysql from 'mysql';
+import cors from 'cors';
+
+import { PORT, DB_USER, DB_PASSWORD, DB_HOST, DB_NAME, DB_PORT } from './config.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'reproductor_musica'
+  host: DB_HOST,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
+  port: DB_PORT,
 });
 
 db.connect(err => {
@@ -50,6 +53,6 @@ app.get('/search', (req, res) => {
   });
 });
 
-app.listen(3001, () => {
-  console.log('Server running on port 3001');
+app.listen(PORT, () => {
+  console.log('Server running on port ', PORT);
 });
