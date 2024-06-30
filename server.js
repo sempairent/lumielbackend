@@ -2,27 +2,43 @@ import express from 'express';
 import mysql from 'mysql';
 import cors from 'cors';
 
-import {  MYSQLDATABASE, MYSQLHOST, MYSQLPASSWORD, MYSQLPORT, MYSQLUSER, PORT } from './config.js';
+import { MYSQLDATABASE, MYSQLHOST, MYSQLPASSWORD, MYSQLPORT, MYSQLUSER, PORT } from './config.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createConnection({
-  host: MYSQLHOST,
-  user: MYSQLUSER,
-  password: MYSQLPASSWORD,
-  database: MYSQLDATABASE,
-  port: MYSQLPORT,
-});
+let db;
 
-db.connect(err => {
-  if (err) {
-    console.error('error connecting: ' + err.stack);
-    return;
-  }
-  console.log('connected as id ' + db.threadId);
-});
+function handleDisconnect() {
+  db = mysql.createConnection({
+    host: MYSQLHOST,
+    user: MYSQLUSER,
+    password: MYSQLPASSWORD,
+    database: MYSQLDATABASE,
+    port: MYSQLPORT,
+  });
+
+  db.connect(err => {
+    if (err) {
+      console.error('Error connecting: ' + err.stack);
+      setTimeout(handleDisconnect, 2000); // Espera 2 segundos antes de intentar reconectar
+    } else {
+      console.log('Connected as id ' + db.threadId);
+    }
+  });
+
+  db.on('error', err => {
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.error('Connection lost. Reconnecting...');
+      handleDisconnect();
+    } else {
+      throw err;
+    }
+  });
+}
+
+handleDisconnect();
 
 app.get('/songs', (req, res) => {
   db.query('SELECT * FROM songs', (err, results) => {
